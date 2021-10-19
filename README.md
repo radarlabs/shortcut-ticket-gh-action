@@ -20,6 +20,7 @@ The total number of Shortcut ticket that were created
 
 ## Example usage
 
+```yaml
 uses: radarlabs/shortcut-ticket-gh-action@v1
 with:
     repo-name:  # id of input
@@ -28,3 +29,4 @@ with:
     alert-type:
         required: true
         default: 'dependabot'
+```
