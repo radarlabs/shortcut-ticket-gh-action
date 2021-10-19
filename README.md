@@ -1,5 +1,5 @@
 # shortcut-ticket-gh-action
-custom github action to create shortcut tickets after a pull request is opened
+This custom github action is used to create shortcut tickets for the specified alert type after a pull request is opened
 
 ## Inputs
 
