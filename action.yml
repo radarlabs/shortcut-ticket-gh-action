@@ -2,10 +2,10 @@
 name: 'Shortcut Ticket Github Action'
 description: 'custom github action to create shortcut tickets after a pull request is opened'
 inputs:
-  repo-name:  # id of input
+  repoName:  # id of input
     required: true
     default: 'radarlabs/server'
-  alert-type:
+  alertType:
     required: true
     default: 'dependabot'
 outputs:
@@ -15,5 +15,5 @@ runs:
   using: 'docker'
   image: 'Dockerfile'
   args:
-    - ${{ inputs.repo-name }}
-    - ${{ inputs.alert-type }}
+    - ${{ inputs.repoName }}
+    - ${{ inputs.alertType }}

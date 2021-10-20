@@ -3,11 +3,11 @@ This custom github action is used to create shortcut tickets for the specified a
 
 ## Inputs
 
-## `repo-name`
+## `repoName`
 
 **Required** The name of the repo whose PRs will be checked for the specified alert type. Default `"radarlabs/server"`.
 
-## `alert-type`
+## `alertType`
 
 **Required** The type of alert that shortcut tickets will be created for. Default `"dependabot"`.
 
@@ -23,10 +23,10 @@ The total number of Shortcut ticket that were created
 ```yaml
 uses: radarlabs/shortcut-ticket-gh-action@v1
 with:
-    repo-name:  # id of input
+    repoName:  # id of input
         required: true
         default: 'radarlabs/server'
-    alert-type:
+    alertType:
         required: true
         default: 'dependabot'
 ```

@@ -17,46 +17,65 @@ def html_to_markdown(body):
     description = markdownify(body, strip=['details'])
     return description
 
-def get_dependabot_alerts():
+def get_alerts(repo_name, alert_type):
     
-    repo = git.get_repo('radarlabs/server')
+    repo = git.get_repo(repo_name)
     pulls = repo.get_pulls(state='open', sort='created', base='master')
 
     dependabots = {}
 
     for pr in pulls:
-        if pr.body and 'dependabot' in pr.body:
+        if pr.body and alert_type in pr.body:
             
             dependabots[pr.title] = (pr.number, str(html_to_markdown(pr.body)))
 
     return dependabots
 
-def _create_story(title, number, body):
+def _create_story(title, body):
     
     headers = {'Shortcut-Token': shortcut_token, 'Content-Type': 'application/json'}
     data = {'name': title, 'project_id': '5255', 'epic_id': '7311', 'description': body, 'owner_ids': ['60e499c8-6469-421b-b1a5-0ec647212fbe']}
-    # data = {'name': title, 'project_id': '5255', 'epic_id': '7311', 'description': body }
     res = requests.post(SHORTCUT_API + '/stories', data=json.dumps(data), headers=headers)
+    story_url = res.json()['app_url']
     if res.status_code != 201:
         print('STATUS_CODE:' + str(res.status_code))
         print('ERROR: ' + str(res.reason))
-        return False
-    return True
+        return None
+    return story_url
 
-def create_stories(dependabots):
+
+def link_story_to_pr(repo_name, pr_num, story_link):
+    repo = git.get_repo(repo_name)
+    pr = repo.get_pull(pr_num)
+    pr.create_issue_comment(body=story_link)
+
+def create_stories(repo_name, dependabots):
     
     tickets = 0
     for title, pr in dependabots.items():
-        if _create_story(title, pr[0], pr[1]):
+        story_link = _create_story(title, pr[1])
+        if story_link:
             tickets += 1
+            link_story_to_pr(repo_name, pr[0], story_link)
     
     return tickets
 
-
 def main():
 
-    dependabots = get_dependabot_alerts()
-    tickets = create_stories(dependabots)
+    repo_name = ''
+    if 'INPUT_REPONAME' in os.environ:
+        repo_name = os.environ['INPUT_REPONAME']
+    else:
+        repo_name = 'radarlabs/server'
+
+    alert_type = ''
+    if 'INPUT_ALERTTYPE' in os.environ:
+        alert_type = os.environ['INPUT_ALERTTYPE']
+    else:
+        alert_type = 'dependabot'
+
+    dependabots = get_alerts(repo_name, alert_type)
+    tickets = create_stories(repo_name, dependabots)
     print('Total number of tickets created: ' + str(tickets))
 
 if __name__ == "__main__":
