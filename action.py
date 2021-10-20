@@ -77,6 +77,7 @@ def main():
     dependabots = get_alerts(repo_name, alert_type)
     tickets = create_stories(repo_name, dependabots)
     print('Total number of tickets created: ' + str(tickets))
+    return tickets
 
 if __name__ == "__main__":
     main()
