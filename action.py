@@ -69,8 +69,8 @@ def main():
         repo_name = 'radarlabs/server'
 
     alert_type = ''
-    if 'INPUT_ALERTTYPE' in os.environ:
-        alert_type = os.environ['INPUT_ALERTTYPE']
+    if 'ALERT_TYPE' in os.environ:
+        alert_type = os.environ['ALERT_TYPE']
     else:
         alert_type = 'dependabot'
 
