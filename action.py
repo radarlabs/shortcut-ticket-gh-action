@@ -63,8 +63,8 @@ def create_stories(repo_name, dependabots):
 def main():
 
     repo_name = ''
-    if 'INPUT_REPONAME' in os.environ:
-        repo_name = os.environ['INPUT_REPONAME']
+    if 'GITHUB_REPOSITORY' in os.environ:
+        repo_name = os.environ['GITHUB_REPOSITORY']
     else:
         repo_name = 'radarlabs/server'
 
