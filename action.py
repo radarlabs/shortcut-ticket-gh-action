@@ -34,7 +34,7 @@ def get_alerts(repo_name, alert_type):
 def _create_story(title, body):
     
     headers = {'Shortcut-Token': shortcut_token, 'Content-Type': 'application/json'}
-    data = {'name': title, 'project_id': '5255', 'epic_id': '7311', 'description': body, 'owner_ids': ['60e499c8-6469-421b-b1a5-0ec647212fbe']}
+    data = {'name': title, 'project_id': '5255', 'epic_id': '7311', 'description': body, "workflow_state_id": 500000008, 'group_id': "600c97de-b7ac-4730-bed0-c7cb4f80c3a4", 'owner_ids': ['60e499c8-6469-421b-b1a5-0ec647212fbe']}
     res = requests.post(SHORTCUT_API + '/stories', data=json.dumps(data), headers=headers)
     story_url = res.json()['app_url']
     if res.status_code != 201:
