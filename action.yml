@@ -1,15 +1,9 @@
 # action.yml
 name: 'Shortcut Ticket Github Action'
 description: 'custom github action to create shortcut tickets after a pull request is opened'
-inputs:
-  alertType:
-    required: true
-    default: 'dependabot'
 outputs:
   tickets: # id of output
     description: 'total number of shortcut tickets created'
 runs:
   using: 'docker'
   image: 'Dockerfile'
-  env:
-    ALERT_TYPE: '${{ inputs.alertType }}'
