@@ -22,14 +22,14 @@ def get_alerts(repo_name, alert_type):
     repo = git.get_repo(repo_name)
     pulls = repo.get_pulls(state='open', sort='created', base='master')
 
-    dependabots = {}
+    alerts = {}
 
     for pr in pulls:
-        if pr.body and alert_type in pr.body:
+        if pr.body and (alert_type in pr.body or alert_type in pr.title):
             
-            dependabots[pr.title] = (pr.number, str(html_to_markdown(pr.body)))
+            alerts[pr.title] = (pr.number, str(html_to_markdown(pr.body)))
 
-    return dependabots
+    return alerts
 
 def _create_story(title, body):
     
@@ -49,10 +49,10 @@ def link_story_to_pr(repo_name, pr_num, story_link):
     pr = repo.get_pull(pr_num)
     pr.create_issue_comment(body=story_link)
 
-def create_stories(repo_name, dependabots):
+def create_stories(repo_name, alerts):
     
     tickets = 0
-    for title, pr in dependabots.items():
+    for title, pr in alerts.items():
         story_link = _create_story(title, pr[1])
         if story_link:
             tickets += 1
@@ -73,9 +73,9 @@ def main():
         alert_type = os.environ['ALERT_TYPE']
     else:
         alert_type = 'dependabot'
-
-    dependabots = get_alerts(repo_name, alert_type)
-    tickets = create_stories(repo_name, dependabots)
+ 
+    alerts = get_alerts(repo_name, alert_type)
+    tickets = create_stories(repo_name, alerts)
     print('Total number of tickets created: ' + str(tickets))
     print(f"::set-output name=tickets::{tickets}")
 
