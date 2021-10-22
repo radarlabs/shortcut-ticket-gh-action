@@ -1,16 +1,24 @@
 # shortcut-ticket-gh-action
 This custom github action is used to create shortcut tickets for the specified alert type after a pull request is opened
 
-## Inputs
+## Required Environment Variables
 
-## `repoName`
+## `$SHORTCUT_TOKEN`
 
-**Required** The name of the repo whose PRs will be checked for the specified alert type. Default `"radarlabs/server"`.
+**Required** Github default token for Github API authentication.
 
-## `alertType`
+## `$CLUBHOUSE_TOKEN`
 
-**Required** The type of alert that shortcut tickets will be created for. Default `"dependabot"`.
+**Required** Token used for Clubhouse API Authentication.
 
+## `$ALERT_TYPE`
+
+**Required** The alert type the tickets should be created for. Default is `dependabot`.
+
+
+## `$PROJECT_ID`
+
+**Required** ID of Shortcut project that the tickets will be created under. Default is `5255` for Security Ops project.
 
 ## Outputs
 
@@ -21,12 +29,13 @@ The total number of Shortcut ticket that were created
 ## Example usage
 
 ```yaml
-uses: radarlabs/shortcut-ticket-gh-action@v1
-with:
-    repoName:  # id of input
-        required: true
-        default: 'radarlabs/server'
-    alertType:
-        required: true
-        default: 'dependabot'
+    steps:
+      - name: Create Shortcut Tickets for Snyk Alerts
+        id: snyk
+        uses: radarlabs/shortcut-ticket-gh-action@v1.0
+        env:
+          SHORTCUT_TOKEN: ${{ secrets.CLUBHOUSE_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PROJECT_ID: 5255
+          ALERT_TYPE: Snyk
 ```
