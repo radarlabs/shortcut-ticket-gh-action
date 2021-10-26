@@ -1,4 +1,4 @@
-# shortcut-ticket-gh-action
+# Shortcut Ticket Github Action
 This custom github action is used to create shortcut tickets for the specified alert type after a pull request is opened
 
 ## Required Environment Variables

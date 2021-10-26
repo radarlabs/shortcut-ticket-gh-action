@@ -5,6 +5,7 @@ from github import Github
 from bs4 import BeautifulSoup
 import requests
 import json
+from datetime import date
 from markdownify import markdownify
 
 GITHUB_API = 'https://api.github.com'
@@ -23,8 +24,6 @@ def get_stories(project_id, alert_type):
 
     stories = []
     for story in data:
-        if alert_type in story['name'] or alert_type in story['description']:
-            print('This story "{0} : {1}" already exists'.format(story['id'], story['name']))
         stories.append(story['name'])
     return stories
 
@@ -36,7 +35,6 @@ def html_to_markdown(body):
 def get_alerts(repo_name, project_id, alert_type):
     
     stories = get_stories(project_id, alert_type)
-
     repo = git.get_repo(repo_name)
     pulls = repo.get_pulls(state='open', sort='created', base='master')
 
@@ -45,15 +43,26 @@ def get_alerts(repo_name, project_id, alert_type):
     for pr in pulls:
         # check if pr contains valid body and doesn't already have story created for it
         # and alert type is in pr
-        if pr.body and pr.title not in stories and (alert_type in pr.body or alert_type in pr.title):
-            alerts[pr.title] = (pr.number, str(html_to_markdown(pr.body)))
+        if pr.body:
+            if pr.title not in stories and (alert_type in pr.body or alert_type in pr.title):
+                alerts[pr.title] = (pr.number, str(html_to_markdown(pr.body)))
+            # check if pr is for remote data refresh
+            elif alert_type == 'ip2loc-data-refresh' and 'ip2loc' in pr.title:
+                date_str = date.today().strftime('%m-%d-%Y')
+                title = pr.title + ' ' + date_str
+                if title not in stories:
+                    alerts[title] = (pr.number, str(html_to_markdown(pr.body)))
 
     return alerts
 
 def _create_story(project_id, title, body):
     
     headers = {'Shortcut-Token': shortcut_token, 'Content-Type': 'application/json'}
-    data = {'name': title, 'project_id': project_id, 'epic_id': '7311', 'description': body, "workflow_state_id": 500000008, 'group_id': "600c97de-b7ac-4730-bed0-c7cb4f80c3a4", 'owner_ids': ['60e499c8-6469-421b-b1a5-0ec647212fbe']}
+    data = ''
+    if 'ip2loc' in title:
+        data = {'name': title, 'project_id': project_id, 'description': body, "story_type": 'chore', "workflow_state_id": 500000006, 'group_id': "600c97de-b7ac-4730-bed0-c7cb4f80c3a4"}
+    else:
+        data = {'name': title, 'project_id': project_id, 'epic_id': '7311', 'description': body, "workflow_state_id": 500000008, 'group_id': "600c97de-b7ac-4730-bed0-c7cb4f80c3a4", 'owner_ids': ['60e499c8-6469-421b-b1a5-0ec647212fbe']}
     res = requests.post(SHORTCUT_API + '/stories', data=json.dumps(data), headers=headers)
     story_url = res.json()['app_url']
     if res.status_code != 201:
@@ -98,6 +107,7 @@ def main():
         project_id = os.environ['PROJECT_ID']
     else:
         project_id = '5255'
+
 
     tickets = 0
     alerts = get_alerts(repo_name, project_id, alert_type)
