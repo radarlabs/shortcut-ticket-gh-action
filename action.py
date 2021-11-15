@@ -1,4 +1,4 @@
-import os
+import os, sys
 
 from requests.api import head
 from github import Github
@@ -32,28 +32,33 @@ def html_to_markdown(body):
     description = markdownify(body, strip=['details'])
     return description
 
-def get_alerts(repo_name, project_id, alert_type):
-    
+def get_pr_and_create_ticket(repo_name, project_id, alert_type, pull_request):
+
     stories = get_stories(project_id, alert_type)
     repo = git.get_repo(repo_name)
-    pulls = repo.get_pulls(state='open', sort='created', base='master')
+    created = False
+    pr = repo.get_pull(int(pull_request))
+    print(pr)
+    print(pr.body)
+    if pr.body:
+        if pr.title not in stories and (alert_type in pr.body or alert_type in pr.title):
+            story_link = _create_story(project_id, pr.title, str(html_to_markdown(pr.body)))
+            if story_link:
+                link_story_to_pr(repo_name, pr.number, story_link)
+                created = True
 
-    alerts = {}
+        # check if pr is for remote data refresh
+        elif alert_type == 'ip2loc-data-refresh' and 'ip2loc' in pr.title:
+            date_str = date.today().strftime('%m-%d-%Y')
+            title = pr.title + ' ' + date_str
+            if title not in stories:
+                story_link = _create_story(project_id, title, str(html_to_markdown(pr.body)))
+                if story_link:
+                    link_story_to_pr(repo_name, pr.number, story_link)
+                    created = True
 
-    for pr in pulls:
-        # check if pr contains valid body and doesn't already have story created for it
-        # and alert type is in pr
-        if pr.body:
-            if pr.title not in stories and (alert_type in pr.body or alert_type in pr.title):
-                alerts[pr.title] = (pr.number, str(html_to_markdown(pr.body)))
-            # check if pr is for remote data refresh
-            elif alert_type == 'ip2loc-data-refresh' and 'ip2loc' in pr.title:
-                date_str = date.today().strftime('%m-%d-%Y')
-                title = pr.title + ' ' + date_str
-                if title not in stories:
-                    alerts[title] = (pr.number, str(html_to_markdown(pr.body)))
-
-    return alerts
+    return created
+    
 
 def _create_story(project_id, title, body):
     
@@ -77,17 +82,6 @@ def link_story_to_pr(repo_name, pr_num, story_link):
     pr = repo.get_pull(pr_num)
     pr.create_issue_comment(body=story_link)
 
-def create_stories(repo_name, project_id, alerts):
-    
-    tickets = 0
-    for title, pr in alerts.items():
-        story_link = _create_story(project_id, title, pr[1])
-        if story_link:
-            tickets += 1
-            link_story_to_pr(repo_name, pr[0], story_link)
-    
-    return tickets
-
 def main():
 
     repo_name = ''
@@ -108,13 +102,16 @@ def main():
     else:
         project_id = '5255'
 
+    pull_request = ''
+    if 'PULL_REQUEST' in os.environ:
+        pull_request = os.environ['PULL_REQUEST']
+    else:
+        sys.exit('No pull request number provided!')
 
-    tickets = 0
-    alerts = get_alerts(repo_name, project_id, alert_type)
-    if alerts:
-        tickets = create_stories(repo_name, project_id, alerts)
-    print('Total number of tickets created: ' + str(tickets))
-    print(f"::set-output name=tickets::{tickets}")
+    created = get_pr_and_create_ticket(repo_name, project_id, alert_type, pull_request)
+
+    print('Ticket created: ' + str(created))
+    print(f"::set-output name=tickets::{created}")
 
 if __name__ == "__main__":
     main()
