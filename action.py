@@ -38,8 +38,6 @@ def get_pr_and_create_ticket(repo_name, project_id, alert_type, pull_request):
     repo = git.get_repo(repo_name)
     created = False
     pr = repo.get_pull(int(pull_request))
-    print(pr)
-    print(pr.body)
     if pr.body:
         if pr.title not in stories and (alert_type in pr.body or alert_type in pr.title):
             story_link = _create_story(project_id, pr.title, str(html_to_markdown(pr.body)))
