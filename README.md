@@ -20,6 +20,11 @@ This custom github action is used to create shortcut tickets for the specified a
 
 **Required** ID of Shortcut project that the tickets will be created under. Default is `5255` for Security Ops project.
 
+## `$PULL_REQUEST`
+
+**Required** Pull request number parsed from Github context. Job will fail if pull request number is missing!
+
+
 ## Outputs
 
 ## `tickets`
@@ -38,4 +43,5 @@ The total number of Shortcut ticket that were created
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PROJECT_ID: 5255
           ALERT_TYPE: Snyk
+          PULL_REQUEST: ${{ github.event.pull_request.number }}
 ```
