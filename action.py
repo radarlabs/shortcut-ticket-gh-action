@@ -34,10 +34,10 @@ def html_to_markdown(body):
 
 def get_pr_and_create_ticket(repo_name, project_id, alert_type, pull_request):
 
-    stories = get_stories(project_id, alert_type)
+    stories = get_stories(project_id, alert_type) # TODO we don't need to check the existing stories - this action will only run when a new PR is created.
     repo = git.get_repo(repo_name)
     created = False
-    pr = repo.get_pull(int(pull_request))
+    pr = repo.get_pull(int(pull_request)) # TODO isn't all of the necessary metadata already passed into "github.event" in the github context?  I think it has the full webhook payload, with tons of metadata. Then we wouldn't need to fetch the PR from the githb api.
     if pr.body:
         if pr.title not in stories and (alert_type in pr.body or alert_type in pr.title):
             story_link = _create_story(project_id, pr.title, str(html_to_markdown(pr.body)))
@@ -62,6 +62,10 @@ def _create_story(project_id, title, body):
     
     headers = {'Shortcut-Token': shortcut_token, 'Content-Type': 'application/json'}
     data = ''
+    
+    # TODO Where do the group_ids, workflow_state_ids, epic_ids, owner_ids and project_ids comes from?  Right now these are all magic numbers that would be really hard for someone else to understand or update.
+    # TODO Can hopefully add some links here to where these numbers are defined in shortcut.
+    # TODO I think the else case should explicitly reference dependabot, like the ip2loc case does.  Otherwise it's not obvious what the else case is handling
     if 'ip2loc' in title:
         data = {'name': title, 'project_id': project_id, 'description': body, "story_type": 'chore', "workflow_state_id": 500000006, 'group_id': "600c97de-b7ac-4730-bed0-c7cb4f80c3a4"}
     else:
@@ -82,6 +86,8 @@ def link_story_to_pr(repo_name, pr_num, story_link):
 
 def main():
 
+    # TODO let's add some links here to the github action docs that document these various environment variables.
+    # TODO If someone needed to fix or bug of enhance this job, that would be an important piece of information.
     repo_name = ''
     if 'GITHUB_REPOSITORY' in os.environ:
         repo_name = os.environ['GITHUB_REPOSITORY']
@@ -98,7 +104,7 @@ def main():
     if 'PROJECT_ID' in os.environ:
         project_id = os.environ['PROJECT_ID']
     else:
-        project_id = '5255'
+        project_id = '5255' # TODO where does this come from?
 
     pull_request = ''
     if 'PULL_REQUEST' in os.environ:
@@ -109,6 +115,7 @@ def main():
     created = get_pr_and_create_ticket(repo_name, project_id, alert_type, pull_request)
 
     print('Ticket created: ' + str(created))
+    # TODO What does this set-output do?  Let's add a link to the Github Action docs that documents how this works.
     print(f"::set-output name=tickets::{created}")
 
 if __name__ == "__main__":
