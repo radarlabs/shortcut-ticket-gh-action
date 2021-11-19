@@ -34,26 +34,32 @@ def html_to_markdown(body):
 
 def get_pr_and_create_ticket(repo_name, project_id, alert_type, pull_request):
 
-    stories = get_stories(project_id, alert_type) # TODO we don't need to check the existing stories - this action will only run when a new PR is created.
-    repo = git.get_repo(repo_name)
+    # stories = get_stories(project_id, alert_type)
+    # repo = git.get_repo(repo_name)
+    # pr = repo.get_pull(int(pull_request))
+
     created = False
-    pr = repo.get_pull(int(pull_request)) # TODO isn't all of the necessary metadata already passed into "github.event" in the github context?  I think it has the full webhook payload, with tons of metadata. Then we wouldn't need to fetch the PR from the githb api.
-    if pr.body:
-        if pr.title not in stories and (alert_type in pr.body or alert_type in pr.title):
-            story_link = _create_story(project_id, pr.title, str(html_to_markdown(pr.body)))
+    body = pull_request['body']
+    title = pull_request['title']
+    number = pull_request['number']
+
+    if body:
+        # for dependabot/ snyk alerts
+        if alert_type in body or alert_type in title:
+            story_link = _create_story(project_id, title, str(html_to_markdown(body)))
             if story_link:
-                link_story_to_pr(repo_name, pr.number, story_link)
+                link_story_to_pr(repo_name, number, story_link)
                 created = True
 
         # check if pr is for remote data refresh
-        elif alert_type == 'ip2loc-data-refresh' and 'ip2loc' in pr.title:
+        elif alert_type == 'ip2loc-data-refresh' and 'ip2loc' in title:
             date_str = date.today().strftime('%m-%d-%Y')
-            title = pr.title + ' ' + date_str
-            if title not in stories:
-                story_link = _create_story(project_id, title, str(html_to_markdown(pr.body)))
-                if story_link:
-                    link_story_to_pr(repo_name, pr.number, story_link)
-                    created = True
+            # created a alternate title with date so we don't create tickets with same title 
+            alt_title = title + ' ' + date_str 
+            story_link = _create_story(project_id, alt_title, str(html_to_markdown(body)))
+            if story_link:
+                link_story_to_pr(repo_name, number, story_link)
+                created = True
 
     return created
     
@@ -62,14 +68,20 @@ def _create_story(project_id, title, body):
     
     headers = {'Shortcut-Token': shortcut_token, 'Content-Type': 'application/json'}
     data = ''
-    
-    # TODO Where do the group_ids, workflow_state_ids, epic_ids, owner_ids and project_ids comes from?  Right now these are all magic numbers that would be really hard for someone else to understand or update.
-    # TODO Can hopefully add some links here to where these numbers are defined in shortcut.
-    # TODO I think the else case should explicitly reference dependabot, like the ip2loc case does.  Otherwise it's not obvious what the else case is handling
+
+    # project_id: Shortcut project id for Security Ops (5255) or Engineering (5409) projects
+    # workflow_state_id: #now (500000006) column, #next(500000008)
+    # group_id: Shortcut group id for Engineers (600c97de-b7ac-4730-bed0-c7cb4f80c3a4)
+    # epic_id: Vulnerability Remediation (7311)
+    # owner_id: Shortcut member id for Joe Kuttickal (60e499c8-6469-421b-b1a5-0ec647212fbe)
+
+    # if ip2loc pr then create a shortcut ticket with state #now in project Engineering
     if 'ip2loc' in title:
-        data = {'name': title, 'project_id': project_id, 'description': body, "story_type": 'chore', "workflow_state_id": 500000006, 'group_id': "600c97de-b7ac-4730-bed0-c7cb4f80c3a4"}
+        data = {'name': title, 'project_id': project_id, 'description': body, 'story_type': 'chore', 'workflow_state_id': 500000006, 'group_id': '600c97de-b7ac-4730-bed0-c7cb4f80c3a4'}
+    # else if it's a dependabot/snyk alert, create a shortcut ticket with state #next in Security Ops project, assign it to Joe Kuttickal and assign it to Vulnerability Remediation
     else:
-        data = {'name': title, 'project_id': project_id, 'epic_id': '7311', 'description': body, "workflow_state_id": 500000008, 'group_id': "600c97de-b7ac-4730-bed0-c7cb4f80c3a4", 'owner_ids': ['60e499c8-6469-421b-b1a5-0ec647212fbe']}
+        data = {'name': title, 'project_id': project_id, 'epic_id': '7311',  'story_type': 'chore', 'description': body, 'workflow_state_id': 500000008, 'group_id': '600c97de-b7ac-4730-bed0-c7cb4f80c3a4', 'owner_ids': ['60e499c8-6469-421b-b1a5-0ec647212fbe']}
+    
     res = requests.post(SHORTCUT_API + '/stories', data=json.dumps(data), headers=headers)
     story_url = res.json()['app_url']
     if res.status_code != 201:
@@ -86,8 +98,8 @@ def link_story_to_pr(repo_name, pr_num, story_link):
 
 def main():
 
-    # TODO let's add some links here to the github action docs that document these various environment variables.
-    # TODO If someone needed to fix or bug of enhance this job, that would be an important piece of information.
+    # For more info about these environment variables
+    # check out the README: https://github.com/radarlabs/shortcut-ticket-gh-action/blob/main/README.md 
     repo_name = ''
     if 'GITHUB_REPOSITORY' in os.environ:
         repo_name = os.environ['GITHUB_REPOSITORY']
@@ -104,18 +116,19 @@ def main():
     if 'PROJECT_ID' in os.environ:
         project_id = os.environ['PROJECT_ID']
     else:
-        project_id = '5255' # TODO where does this come from?
+        project_id = '5255' #Project ID for Security Ops
 
     pull_request = ''
     if 'PULL_REQUEST' in os.environ:
-        pull_request = os.environ['PULL_REQUEST']
+        pull_request = json.loads(os.environ['PULL_REQUEST'], strict=False)
     else:
-        sys.exit('No pull request number provided!')
+        sys.exit('No pull request context provided!')
 
     created = get_pr_and_create_ticket(repo_name, project_id, alert_type, pull_request)
 
     print('Ticket created: ' + str(created))
-    # TODO What does this set-output do?  Let's add a link to the Github Action docs that documents how this works.
+    
+    # https://docs.github.com/en/actions/creating-actions/metadata-syntax-for-github-actions#outputs-for-composite-actions
     print(f"::set-output name=tickets::{created}")
 
 if __name__ == "__main__":
