@@ -16,18 +16,6 @@ git = Github(github_token)
 
 shortcut_token = os.environ['SHORTCUT_TOKEN']
 
-def get_stories(project_id, alert_type):
-    headers = {'Shortcut-Token': shortcut_token, 'Content-Type': 'application/json'}
-    data = { "includes_description": True }
-    res = requests.get(SHORTCUT_API + '/projects/{0}/stories'.format(project_id),data=json.dumps(data), headers=headers)
-    data = res.json()
-
-    stories = []
-    for story in data:
-        stories.append(story['name'])
-    return stories
-
-
 def html_to_markdown(body):
     description = markdownify(body, strip=['details'])
     return description
