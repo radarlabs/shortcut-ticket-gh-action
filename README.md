@@ -42,6 +42,6 @@ The total number of Shortcut ticket that were created
           SHORTCUT_TOKEN: ${{ secrets.CLUBHOUSE_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PROJECT_ID: 5255
-          ALERT_TYPE: Snyk
+          ALERT_TYPE: snyk
           PULL_REQUEST: ${{ github.event.pull_request }}
 ```
