@@ -37,11 +37,11 @@ The total number of Shortcut ticket that were created
     steps:
       - name: Create Shortcut Tickets for Snyk Alerts
         id: snyk
-        uses: radarlabs/shortcut-ticket-gh-action@v1.0
+        uses: radarlabs/shortcut-ticket-gh-action@v1.1
         env:
           SHORTCUT_TOKEN: ${{ secrets.CLUBHOUSE_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PROJECT_ID: 5255
           ALERT_TYPE: Snyk
-          PULL_REQUEST: ${{ github.event.pull_request.number }}
+          PULL_REQUEST: ${{ github.event.pull_request }}
 ```

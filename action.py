@@ -22,10 +22,6 @@ def html_to_markdown(body):
 
 def get_pr_and_create_ticket(repo_name, project_id, alert_type, pull_request):
 
-    # stories = get_stories(project_id, alert_type)
-    # repo = git.get_repo(repo_name)
-    # pr = repo.get_pull(int(pull_request))
-
     created = False
     body = pull_request['body']
     title = pull_request['title']
@@ -33,7 +29,7 @@ def get_pr_and_create_ticket(repo_name, project_id, alert_type, pull_request):
 
     if body:
         # for dependabot/ snyk alerts
-        if alert_type in body or alert_type in title:
+        if alert_type == 'snyk' or alert_type == 'dependabot':
             story_link = _create_story(project_id, title, str(html_to_markdown(body)))
             if story_link:
                 link_story_to_pr(repo_name, number, story_link)
