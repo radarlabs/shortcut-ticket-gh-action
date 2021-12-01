@@ -23,27 +23,31 @@ def html_to_markdown(body):
 def get_pr_and_create_ticket(repo_name, project_id, alert_type, pull_request):
 
     created = False
-    body = pull_request['body']
-    title = pull_request['title']
-    number = pull_request['number']
+    if alert_type == 'snyk' or alert_type == 'dependabot':
+        # use pr event context and create ticket
+        body = pull_request['body']
+        title = pull_request['title']
+        number = pull_request['number']
 
-    if body:
-        # for dependabot/ snyk alerts
-        if alert_type == 'snyk' or alert_type == 'dependabot':
-            story_link = _create_story(project_id, title, str(html_to_markdown(body)))
-            if story_link:
-                link_story_to_pr(repo_name, number, story_link)
-                created = True
+        story_link = _create_story(project_id, title, str(html_to_markdown(body)))
+        if story_link:
+            link_story_to_pr(repo_name, number, story_link)
+            created = True
 
         # check if pr is for remote data refresh
-        elif alert_type == 'ip2loc-data-refresh' and 'ip2loc' in title:
-            date_str = date.today().strftime('%m-%d-%Y')
-            # created a alternate title with date so we don't create tickets with same title 
-            alt_title = title + ' ' + date_str 
-            story_link = _create_story(project_id, alt_title, str(html_to_markdown(body)))
-            if story_link:
-                link_story_to_pr(repo_name, number, story_link)
-                created = True
+    elif alert_type == 'ip2loc-data-refresh':
+        # fetch pr info and create ticket
+        repo = git.get_repo(repo_name)
+        pr = repo.get_pull(int(pull_request))
+        
+        # created a alternate title with date so we don't create tickets with same title
+        date_str = date.today().strftime('%m-%d-%Y')
+        alt_title = pr.title + ' ' + date_str 
+        
+        story_link = _create_story(project_id, alt_title, str(html_to_markdown(pr.body)))
+        if story_link:
+            link_story_to_pr(repo_name, pr.number, story_link)
+            created = True
 
     return created
     
@@ -102,9 +106,17 @@ def main():
     else:
         project_id = '5255' #Project ID for Security Ops
 
+    
     pull_request = ''
+    
+    # dependabot and snyk will be using the PULL_REQUEST env var
+    # and it will contain the pr event json as a string
     if 'PULL_REQUEST' in os.environ:
         pull_request = json.loads(os.environ['PULL_REQUEST'], strict=False)
+    # ip2loc will be using PULL_REQUEST_NUMBER env var
+    # and it will only contain the pr number
+    elif 'PULL_REQUEST_NUMBER' in os.environ:
+        pull_request = os.environ['PULL_REQUEST_NUMBER']
     else:
         sys.exit('No pull request context provided!')
 
