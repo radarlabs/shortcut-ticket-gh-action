@@ -22,14 +22,18 @@ This custom github action is used to create shortcut tickets for the specified a
 
 ## `$PULL_REQUEST`
 
-**Required** Pull request number parsed from Github context. Job will fail if pull request number is missing!
+**Required** For dependabot/snyk alerts this environment variable will be set to the pull request context json string. Job will fail if pull request context is missing!
+
+## `$PULL_REQUEST_NUMBER`
+
+**Required** For ip2loc workflow this environment variable will be set to pr number obtained from the create pull request step. Job will fail if pull request number is missing!
 
 
 ## Outputs
 
 ## `tickets`
 
-The total number of Shortcut ticket that were created
+Did a ticket/s get created? True or False
 
 ## Example usage
 
