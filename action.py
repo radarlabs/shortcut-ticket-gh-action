@@ -70,8 +70,13 @@ def _create_story(project_id, title, body):
     else:
         data = {'name': title, 'project_id': project_id, 'epic_id': '7311',  'story_type': 'chore', 'description': body, 'workflow_state_id': 500000008, 'group_id': '600c97de-b7ac-4730-bed0-c7cb4f80c3a4', 'owner_ids': ['60e499c8-6469-421b-b1a5-0ec647212fbe']}
     
-    res = requests.post(SHORTCUT_API + '/stories', data=json.dumps(data), headers=headers, timeout=10)
+    story_url = None
+    res = None
+    while res is None:
+        res = requests.post(SHORTCUT_API + '/stories', data=json.dumps(data), headers=headers, timeout=30)
+        
     story_url = res.json()['app_url']
+
     if res.status_code != 201:
         print('STATUS_CODE:' + str(res.status_code))
         print('ERROR: ' + str(res.reason))
