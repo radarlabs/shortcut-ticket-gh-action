@@ -72,10 +72,10 @@ def _create_story(project_id, title, body):
     
     story_url = None
     res = None
-    while res is None:
-        res = requests.post(SHORTCUT_API + '/stories', data=json.dumps(data), headers=headers, timeout=30)
-        
-    story_url = res.json()['app_url']
+    while story_url is None:
+        res = requests.post(SHORTCUT_API + '/stories', data=json.dumps(data), headers=headers, timeout=(20, 40))
+        if res.json()['story_url']:
+            story_url = res.json()['app_url']
 
     if res.status_code != 201:
         print('STATUS_CODE:' + str(res.status_code))
