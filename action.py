@@ -72,15 +72,24 @@ def _create_story(project_id, title, body):
     
     story_url = None
     res = None
-    while story_url is None:
-        res = requests.post(SHORTCUT_API + '/stories', data=json.dumps(data), headers=headers, timeout=(20, 40))
-        if 'app_url' in res.json():
-            story_url = res.json()['app_url']
-
-    if res.status_code != 201:
-        print('STATUS_CODE:' + str(res.status_code))
-        print('ERROR: ' + str(res.reason))
-        return None
+    retries = 2
+    while retries > 0:
+        try:
+            with requests.Session() as session:
+                res = session.post(SHORTCUT_API + '/stories', data=json.dumps(data), headers=headers, timeout=None)
+                if 'app_url' in res.json():
+                    story_url = res.json()['app_url']
+                    break
+                if res.status_code != 201:
+                    print('STATUS_CODE:' + str(res.status_code))
+                    print('ERROR: ' + str(res.reason))
+                    retries -= 1
+        except Exception as err:
+            print("Error: %s" % err)
+            retries -= 1
+        
+        print("Retries remaining: %s" % retries)
+        
     return story_url
 
 
